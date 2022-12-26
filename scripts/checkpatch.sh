@@ -42,6 +42,13 @@ function check_doc()
 	HORIZONTAL_LINE=`sed -n "/^+------$/p" ${DIFF_DOC_ALL}`
 	# echo "### ${COMMIT}, ${SEVERITY}, ${TITLE}, ${FILE}"
 
+	# check blank line after Heading 1
+	HEADING_1=`sed -n '1p' ${DOC}`
+	if sed -n '2p' ${DOC} | grep -q [a-z,A-Z] ; then
+		echo "ERROR: ${DOC}: Should reserve blank line after '${HEADING_1}'"
+		exit 1
+	fi
+
 	# check space
 	if sed -n "/##/p" ${DOC} | grep -v '## [a-z,A-Z]' ; then
 		echo "ERROR: ${DOC}: Should only 1 space between '#' and word"
@@ -62,6 +69,10 @@ function check_doc()
 	fi
 
 	# check standalone file
+	if ! echo ${FILE} | grep -Eq '\.bin|\.elf|\.img' ; then
+		echo "ERROR: ${DOC}: '${FILE}' missing the file format suffix"
+		exit 1
+	fi
 	if ! echo ${FILE} | grep -q { ; then
 		if ! git log ${ARG_COMMIT} -1 --name-only | grep -q ${FILE}; then
 			echo "ERROR: ${DOC}: '${FILE}' is not updated in this patch"
@@ -132,11 +143,11 @@ function check_doc()
 				TOP_SEVERITY="${EACH_SEVERITY}"
 			elif [ "${TOP_SEVERITY}" == "${SVT_MODERATE}" ]; then
 				if [ "${EACH_SEVERITY}" == "${SVT_CRITIAL}" -o "${EACH_SEVERITY}" == "${SVT_IMPORTANT}" ]; then
-						TOP_SEVERITY="${EACH_SEVERITY}"
+					TOP_SEVERITY="${EACH_SEVERITY}"
 				fi
 			elif [ "${TOP_SEVERITY}" == "${SVT_IMPORTANT}" ]; then
 				if [ "${EACH_SEVERITY}" == "${SVT_CRITIAL}" ]; then
-						TOP_SEVERITY="${EACH_SEVERITY}"
+					TOP_SEVERITY="${EACH_SEVERITY}"
 				fi
 			fi
 		done < ${DIFF_DOC_FIXED}
